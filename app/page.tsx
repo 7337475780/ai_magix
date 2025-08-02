@@ -6,8 +6,12 @@ import Input from "@/components/inputs/Input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FaDownload } from "react-icons/fa";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 const Page = () => {
+  const { data: session, status } = useSession();
+  const isAuthed = status === "authenticated";
   const [prompt, setPrompt] = useState(""); // Input text
   const [suggestedPrompt, setSuggestedPrompt] = useState<string | null>(null); // Enhanced suggestion
   const [imageUrls, setImageUrls] = useState<string[]>([]); // Generated image links
@@ -39,6 +43,11 @@ const Page = () => {
 
   // Generate image from prompt
   const generateImage = async (prompt: string) => {
+    if (!isAuthed) {
+      toast.error("Please sign in to generate images");
+      return;
+    }
+
     if (!prompt.trim()) return;
     setLoading(true);
     setErr(null);
@@ -123,6 +132,10 @@ const Page = () => {
         prompt={prompt}
         setPrompt={setPrompt}
         onSubmit={async (rawPrompt, enhance) => {
+          if (!isAuthed) {
+            toast.error("Please sign in to generate images.");
+            return;
+          }
           if (enhance) {
             try {
               const suggestion = await enhancedPrompt(rawPrompt);
