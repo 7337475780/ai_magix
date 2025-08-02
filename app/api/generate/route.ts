@@ -1,4 +1,5 @@
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -29,7 +30,6 @@ export async function POST(req: Request) {
 
     // Prevent overly long prompts
     const safePrompt = prompt.slice(0, 300);
-    console.log("📤 Sending prompt:", safePrompt);
 
     // Send request to RapidAPI
     const response = await fetch(
@@ -79,8 +79,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ err: "No image returned" }, { status: 500 });
     }
 
+    await prisma.generation.createMany({
+      data: imageUrls.map((url: string) => ({
+        prompt: safePrompt,
+        imageUrl: url,
+        userEmail: session.user?.email,
+      })),
+    });
+
     // Success response
-    return NextResponse.json({ imageUrls });
+    return NextResponse.json({ imageUrls, prompt: safePrompt });
   } catch (err) {
     console.error("Server Error:", err);
     return NextResponse.json({ err: "Something went wrong." }, { status: 500 });

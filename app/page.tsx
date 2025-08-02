@@ -23,16 +23,22 @@ const Page = () => {
 
   const imageRef = useRef<HTMLDivElement | null>(null);
 
-  // Load from localStorage
+  // Load from DB
   useEffect(() => {
-    const stored = localStorage.getItem("aimagix-history");
-    if (stored) setHistory(JSON.parse(stored));
-  }, []);
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch("/api/history");
+        const data = await res.json();
 
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem("aimagix-history", JSON.stringify(history));
-  }, [history]);
+        if (res.ok) {
+          setHistory(data.history);
+        } else {
+          console.error(data.err);
+        }
+      } catch (err) {}
+    };
+    fetchHistory();
+  }, []);
 
   // Auto scroll to new image
   useEffect(() => {
@@ -71,7 +77,10 @@ const Page = () => {
         setImageUrls(data.imageUrls);
         setHistory((prev) => [
           ...prev,
-          ...data.imageUrls.map((img: string) => ({ prompt, image: img })),
+          ...data.imageUrls.map((img: string) => ({
+            prompt: data.prompt,
+            image: img,
+          })),
         ]);
       } else {
         setErr("No image returned.");
@@ -230,7 +239,7 @@ const Page = () => {
       )}
 
       {/* History Section */}
-      {history.length > 0 && (
+      {session && history.length > 0 && (
         <section className="mt-12 w-full">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold text-gray-800">
